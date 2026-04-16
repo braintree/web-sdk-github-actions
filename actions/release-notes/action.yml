@@ -1,0 +1,47 @@
+name: "Create Release Notes"
+description: "Extract release notes from CHANGELOG.md and create a GitHub release"
+
+inputs:
+  github-token:
+    description: "GitHub token for creating releases"
+    required: true
+
+outputs:
+  version:
+    description: "The release version"
+    value: ${{ steps.version.outputs.latest_version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Checkout latest main"
+      run: |
+        git checkout main
+        git pull
+      shell: bash
+
+    - name: "Get version"
+      id: version
+      run: |
+        latest_version=$(npm pkg get version --workspaces=false | tr -d '"')
+        echo "latest_version=$latest_version" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: "Extract release notes from CHANGELOG"
+      id: notes
+      run: |
+        {
+          echo 'release_details<<EOF'
+          awk '/^## / { if (p) exit; p=1 } p' CHANGELOG.md | sed '1d'
+          echo EOF
+        } >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: "Create GitHub release"
+      run: |
+        gh release create "${{ steps.version.outputs.latest_version }}" \
+          --title "v${{ steps.version.outputs.latest_version }}" \
+          --notes "${{ steps.notes.outputs.release_details }}"
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      shell: bash

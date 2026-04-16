@@ -1,0 +1,34 @@
+name: "Setup Node Environment"
+description: "Setup Node.js from .nvmrc, install global npm, and optionally run npm ci"
+
+inputs:
+  install-dependencies:
+    description: "Run npm ci after node setup"
+    required: false
+    default: "true"
+  node-version-file:
+    description: "Path to the node version file"
+    required: false
+    default: ".nvmrc"
+  registry-url:
+    description: "npm registry URL (set when publishing to configure auth)"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Setup Node.js"
+      uses: actions/setup-node@v6
+      with:
+        node-version-file: ${{ inputs.node-version-file }}
+        registry-url: ${{ inputs.registry-url || '' }}
+
+    - name: "Install global npm"
+      run: npm install -g npm
+      shell: bash
+
+    - name: "Install dependencies"
+      if: inputs.install-dependencies == 'true'
+      run: npm ci
+      shell: bash

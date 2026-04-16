@@ -1,0 +1,99 @@
+name: "Stale Issues/PRs/Branches"
+
+on:
+  workflow_call:
+    inputs:
+      pr-days-stale:
+        description: "Days before a PR is marked stale"
+        required: false
+        type: number
+        default: 14
+      pr-days-close:
+        description: "Days after stale before a PR is closed"
+        required: false
+        type: number
+        default: 7
+      issue-days-stale:
+        description: "Days before an issue is marked stale"
+        required: false
+        type: number
+        default: 14
+      issue-days-close:
+        description: "Days after stale before an issue is closed"
+        required: false
+        type: number
+        default: 7
+      branch-days-stale:
+        description: "Days before a branch is marked stale"
+        required: false
+        type: number
+        default: 21
+      branch-days-close:
+        description: "Days after stale before a branch is deleted"
+        required: false
+        type: number
+        default: 7
+      exempt-branches:
+        description: "Regex for branches exempt from cleanup"
+        required: false
+        type: string
+        default: "^(main|gh-pages)$"
+      exempt-pr-labels:
+        description: "Comma-separated labels that exempt PRs from stale"
+        required: false
+        type: string
+        default: "dependencies"
+      runs-on:
+        description: "Runner label"
+        required: false
+        type: string
+        default: "ubuntu-latest"
+
+permissions: {}
+
+jobs:
+  stale-issues-and-prs:
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      actions: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: "Mark stale issues and PRs"
+        uses: actions/stale@v10
+        with:
+          operations-per-run: 500
+          days-before-issue-stale: ${{ inputs.issue-days-stale }}
+          days-before-issue-close: ${{ inputs.issue-days-close }}
+          stale-issue-message: >-
+            This issue has had no activity for ${{ inputs.issue-days-stale }} days.
+            It will be closed in ${{ inputs.issue-days-close }} days if no activity is registered.
+          close-issue-message: >-
+            This issue has been closed automatically due to inactivity.
+            If you want to reopen discussion, please create a new issue.
+          days-before-pr-stale: ${{ inputs.pr-days-stale }}
+          days-before-pr-close: ${{ inputs.pr-days-close }}
+          stale-pr-message: >-
+            This PR has had no activity for ${{ inputs.pr-days-stale }} days.
+            It will be closed in ${{ inputs.pr-days-close }} days if no activity is registered.
+          close-pr-message: >-
+            This PR has been closed automatically due to inactivity.
+            You may reopen the pull request at any time.
+          exempt-pr-labels: ${{ inputs.exempt-pr-labels }}
+
+  stale-branches:
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: write
+    steps:
+      - name: "Remove stale branches"
+        uses: fpicalausa/remove-stale-branches@7c4f2afe88a36c0f9114cd958380979b9d7323fb
+        with:
+          days-before-branch-stale: ${{ inputs.branch-days-stale }}
+          days-before-branch-delete: ${{ inputs.branch-days-close }}
+          ignore-branches-with-open-prs: true
+          exempt-branches-regex: ${{ inputs.exempt-branches }}
+          stale-branch-message: >-
+            @{author} Your branch has had no activity in ${{ inputs.branch-days-stale }} days.
+            It will be deleted in ${{ inputs.branch-days-close }} days if no activity is registered.
+            To keep this branch, delete this comment or add new commits.
