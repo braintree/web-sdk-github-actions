@@ -1,4 +1,4 @@
-# braintree/braintree-web-sdk-github-actions
+# braintree/web-sdk-github-actions
 
 Shared composite actions and reusable workflows for Braintree Web SDK repositories.
 
@@ -11,7 +11,7 @@ Setup Node.js from `.nvmrc`, install global npm, and optionally run `npm ci`.
 ```yaml
 steps:
   - uses: actions/checkout@v6
-  - uses: braintree/braintree-web-sdk-github-actions/actions/setup-node@main
+  - uses: braintree/web-sdk-github-actions/actions/setup-node@main
     with:
       install-dependencies: "true"    # default: "true"
       node-version-file: ".nvmrc"     # default: ".nvmrc"
@@ -25,7 +25,7 @@ Validate CHANGELOG, bump npm version, create release branch + PR, merge, and tag
 ```yaml
 steps:
   - uses: actions/checkout@v6
-  - uses: braintree/braintree-web-sdk-github-actions/actions/version-bump@main
+  - uses: braintree/web-sdk-github-actions/actions/version-bump@main
     with:
       version-type: "patch"           # required: patch | minor | major
       github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -47,7 +47,7 @@ Extract release notes from CHANGELOG.md and create a GitHub release using `gh` C
 ```yaml
 steps:
   - uses: actions/checkout@v6
-  - uses: braintree/braintree-web-sdk-github-actions/actions/release-notes@main
+  - uses: braintree/web-sdk-github-actions/actions/release-notes@main
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -65,7 +65,7 @@ Publish package to npm with provenance.
 ```yaml
 steps:
   - uses: actions/checkout@v6
-  - uses: braintree/braintree-web-sdk-github-actions/actions/npm-publish@main
+  - uses: braintree/web-sdk-github-actions/actions/npm-publish@main
     with:
       npm-token: ${{ secrets.BRAINTREE_NPM_ACCESS_TOKEN }}
       registry-url: "https://registry.npmjs.org/"  # default
@@ -99,7 +99,7 @@ on:
 
 jobs:
   ci:
-    uses: braintree/braintree-web-sdk-github-actions/.github/workflows/ci.yml@main
+    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@main
     # with:                                              # all optional
     #   lint-command: "npx eslint . --ext .js,.ts"       # default
     #   test-command: "npm test"                         # default
@@ -150,7 +150,7 @@ on:
 
 jobs:
   publish:
-    uses: braintree/braintree-web-sdk-github-actions/.github/workflows/publish.yml@main
+    uses: braintree/web-sdk-github-actions/.github/workflows/publish.yml@main
     with:
       version-type: ${{ inputs.version_type }}
     secrets:
@@ -174,7 +174,7 @@ on:
 
 jobs:
   cleanup:
-    uses: braintree/braintree-web-sdk-github-actions/.github/workflows/stale-cleanup.yml@main
+    uses: braintree/web-sdk-github-actions/.github/workflows/stale-cleanup.yml@main
     # with:                                      # all optional
     #   pr-days-stale: 14                        # default
     #   pr-days-close: 7                         # default
@@ -200,7 +200,7 @@ on:
 
 jobs:
   check:
-    uses: braintree/braintree-web-sdk-github-actions/.github/workflows/pr-jira-check.yml@main
+    uses: braintree/web-sdk-github-actions/.github/workflows/pr-jira-check.yml@main
     # with:
     #   jira-url-pattern: 'https://paypal\.atlassian\.net/browse/[A-Z]+-[0-9]+'
 ```

@@ -34,7 +34,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: braintree/braintree-web-sdk-github-actions/.github/workflows/ci.yml@main
+    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@main
     with:
       lint-command: ${{ inputs.lint-command }}
       test-command: ${{ inputs.test-command }}
@@ -53,7 +53,7 @@ jobs:
 
       - name: "Bump version"
         id: bump
-        uses: braintree/braintree-web-sdk-github-actions/actions/version-bump@main
+        uses: braintree/web-sdk-github-actions/actions/version-bump@main
         with:
           version-type: ${{ inputs.version-type }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: "Publish to npm"
-        uses: braintree/braintree-web-sdk-github-actions/actions/npm-publish@main
+        uses: braintree/web-sdk-github-actions/actions/npm-publish@main
         with:
           npm-token: ${{ secrets.npm-token }}
 
@@ -80,6 +80,6 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: "Create release notes"
-        uses: braintree/braintree-web-sdk-github-actions/actions/release-notes@main
+        uses: braintree/web-sdk-github-actions/actions/release-notes@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
