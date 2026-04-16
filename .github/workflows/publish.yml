@@ -28,6 +28,8 @@ on:
         description: "npm access token (e.g. BRAINTREE_NPM_ACCESS_TOKEN)"
         required: true
 
+permissions: {}
+
 concurrency:
   group: npm-publish
   cancel-in-progress: true
