@@ -8,6 +8,10 @@ inputs:
   github-token:
     description: "GitHub token for creating/merging PRs"
     required: true
+  base-branch:
+    description: "Branch to target for the release PR"
+    required: false
+    default: "main"
 
 outputs:
   new-version:
@@ -69,7 +73,7 @@ runs:
         pr_url=$(gh pr create \
           --title "Release v${{ steps.bump.outputs.new_version }}" \
           --body "Updated changelog for release v${{ steps.bump.outputs.new_version }}" \
-          --base main \
+          --base ${{ inputs.base-branch }} \
           --head "release/v${{ steps.bump.outputs.new_version }}")
 
         pr_number=$(echo "$pr_url" | awk -F/ '{print $NF}')
@@ -82,8 +86,8 @@ runs:
 
     - name: "Tag final version on main"
       run: |
-        git checkout main
+        git checkout ${{ inputs.base-branch }}
         git pull
         git tag -m "${{ steps.bump.outputs.new_version }}" "${{ steps.bump.outputs.new_version }}"
-        git push origin main --tags
+        git push origin ${{ inputs.base-branch }} --tags
       shell: bash
