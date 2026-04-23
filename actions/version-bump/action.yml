@@ -69,25 +69,28 @@ runs:
       shell: bash
 
     - name: "Create and merge PR"
+      env:
+        BASE_BRANCH: ${{ inputs.base-branch }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         pr_url=$(gh pr create \
           --title "Release v${{ steps.bump.outputs.new_version }}" \
           --body "Updated changelog for release v${{ steps.bump.outputs.new_version }}" \
-          --base ${{ inputs.base-branch }} \
+          --base "$BASE_BRANCH" \
           --head "release/v${{ steps.bump.outputs.new_version }}")
 
         pr_number=$(echo "$pr_url" | awk -F/ '{print $NF}')
         gh pr merge "$pr_number" --admin --merge --delete-branch
 
         echo "#### Merged release PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
       shell: bash
 
     - name: "Tag final version on main"
+      env:
+        BASE_BRANCH: ${{ inputs.base-branch }}
       run: |
-        git checkout ${{ inputs.base-branch }}
+        git checkout "$BASE_BRANCH"
         git pull
         git tag -m "${{ steps.bump.outputs.new_version }}" "${{ steps.bump.outputs.new_version }}"
-        git push origin ${{ inputs.base-branch }} --tags
+        git push origin "$BASE_BRANCH" --tags
       shell: bash
