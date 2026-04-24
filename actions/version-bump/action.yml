@@ -1,9 +1,9 @@
 name: "Version Bump"
-description: "Validate CHANGELOG, bump npm version, create release branch + PR, merge, and tag"
+description: "Bump npm version, update CHANGELOG, create release branch + PR, merge, and tag"
 
 inputs:
   version-type:
-    description: "Version bump type (major, minor, patch)"
+    description: "Version bump type (major, minor, patch, beta, alpha, rc)"
     required: true
   github-token:
     description: "GitHub token for creating/merging PRs"
@@ -12,6 +12,9 @@ inputs:
     description: "Branch to target for the release PR"
     required: false
     default: "main"
+  feature-tag:
+    description: "Optional feature tag for pre-releases; e.g. `3ds` produces `3.135.0-beta-3ds.1`"
+    required: false
 
 outputs:
   new-version:
@@ -40,57 +43,56 @@ runs:
       with:
         node-version-file: .nvmrc
 
-    - name: "Bump npm version"
+    - name: "Bump version and update CHANGELOG"
       id: bump
+      env:
+        VERSION_TYPE: ${{ inputs.version-type }}
+        FEATURE_TAG: ${{ inputs.feature-tag }}
       run: |
-        new_version=$(npm version ${{ inputs.version-type }})
-        new_version=$(echo "$new_version" | sed 's/v//')
+        case "$VERSION_TYPE" in
+          beta|alpha|rc)
+            if [ -n "$FEATURE_TAG" ]; then
+              preid="${VERSION_TYPE}-${FEATURE_TAG}"
+            else
+              preid="$VERSION_TYPE"
+            fi
+            new_version=$(npm version prerelease --preid="$preid" --no-git-tag-version)
+            ;;
+          *)
+            new_version=$(npm version "$VERSION_TYPE" --no-git-tag-version)
+            ;;
+        esac
+        new_version=${new_version#v}
         echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
-        echo "### Version Bump" >> "$GITHUB_STEP_SUMMARY"
-        echo "${{ inputs.version-type }} → **$new_version**" >> "$GITHUB_STEP_SUMMARY"
-      shell: bash
 
-    - name: "Update CHANGELOG date"
-      run: |
         today=$(date +'%Y-%m-%d')
-        sed -i "s/## unreleased/## ${{ steps.bump.outputs.new_version }} (${today})/i" CHANGELOG.md
+        sed -i "s/## unreleased/## ${new_version} (${today})/i" CHANGELOG.md
+
+        git add package.json package-lock.json CHANGELOG.md
+        git commit -m "Release v${new_version}"
+        git tag -m "v${new_version}" "v${new_version}"
+
+        echo "### Version Bump" >> "$GITHUB_STEP_SUMMARY"
+        echo "${VERSION_TYPE} → **${new_version}**" >> "$GITHUB_STEP_SUMMARY"
       shell: bash
 
-    - name: "Commit changelog"
-      run: |
-        git add --all
-        git commit -m "Changelog for v${{ steps.bump.outputs.new_version }}"
-      shell: bash
-
-    - name: "Create release branch and push"
-      run: |
-        git checkout -b "release/v${{ steps.bump.outputs.new_version }}"
-        git push -u origin "release/v${{ steps.bump.outputs.new_version }}" --tags
-      shell: bash
-
-    - name: "Create and merge PR"
+    - name: "Create release branch and PR"
       env:
         BASE_BRANCH: ${{ inputs.base-branch }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
+        new_version="${{ steps.bump.outputs.new_version }}"
+        git checkout -b "release/v${new_version}"
+        git push -u origin "release/v${new_version}" --tags
+
         pr_url=$(gh pr create \
-          --title "Release v${{ steps.bump.outputs.new_version }}" \
-          --body "Updated changelog for release v${{ steps.bump.outputs.new_version }}" \
+          --title "Release v${new_version}" \
+          --body "Updated changelog for release v${new_version}" \
           --base "$BASE_BRANCH" \
-          --head "release/v${{ steps.bump.outputs.new_version }}")
+          --head "release/v${new_version}")
 
         pr_number=$(echo "$pr_url" | awk -F/ '{print $NF}')
-        gh pr merge "$pr_number" --admin --merge --delete-branch
+        gh pr merge "$pr_number" --auto --merge --delete-branch
 
         echo "#### Merged release PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
-      shell: bash
-
-    - name: "Tag final version on main"
-      env:
-        BASE_BRANCH: ${{ inputs.base-branch }}
-      run: |
-        git checkout "$BASE_BRANCH"
-        git pull
-        git tag -m "${{ steps.bump.outputs.new_version }}" "${{ steps.bump.outputs.new_version }}"
-        git push origin "$BASE_BRANCH" --tags
       shell: bash
