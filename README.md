@@ -34,6 +34,7 @@ steps:
 **Outputs:** `new-version` — the bumped version string (without `v` prefix).
 
 **Requires permissions:**
+
 ```yaml
 permissions:
   contents: write
@@ -50,9 +51,11 @@ steps:
   - uses: braintree/web-sdk-github-actions/actions/release-notes@main
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
+      dry-run: "false"   # set to "true" to skip gh release create
 ```
 
 **Requires permissions:**
+
 ```yaml
 permissions:
   contents: write
@@ -69,9 +72,11 @@ steps:
     with:
       npm-token: ${{ secrets.BRAINTREE_NPM_ACCESS_TOKEN }}
       registry-url: "https://registry.npmjs.org/"  # default
+      dry-run: "false"                              # set to "true" to run npm publish --dry-run
 ```
 
 **Requires permissions:**
+
 ```yaml
 permissions:
   id-token: write   # for provenance
@@ -122,19 +127,22 @@ with:
 with:
   lint-command: ""
 
+# To skip testing:
+with:
+  test-command: ""
+
 # For internal repos using PayPal runners:
 with:
   runs-on: "gh-2-core-ubuntu-latest"
 ```
 
-### Publish
+### Release Pipeline
 
-Full publish pipeline: CI → version bump → npm publish → GitHub release.
+Full release pipeline: CI → version bump → npm publish → GitHub release. This is the primary entrypoint for most repos.
 
 ```yaml
-# .github/workflows/publish.yml
-name: "Publish to npm"
-run-name: Deploy ${{ github.repository }} to npmjs by @${{ github.actor }}
+# .github/workflows/release-pipeline.yml
+name: "Release"
 
 on:
   workflow_dispatch:
@@ -149,8 +157,8 @@ on:
           - major
 
 jobs:
-  publish:
-    uses: braintree/web-sdk-github-actions/.github/workflows/publish.yml@main
+  release:
+    uses: braintree/web-sdk-github-actions/.github/workflows/release-pipeline.yml@main
     with:
       version-type: ${{ inputs.version_type }}
     secrets:
@@ -158,6 +166,37 @@ jobs:
 ```
 
 This single file replaces the previous `publish.yml` + `version-bump.yml` + `release-notes.yml` (3 files → 1).
+
+### Publish
+
+Publish-only workflow: npm publish → GitHub release. Use this when the version has already been bumped, or to re-publish without re-running CI and the version bump. Supports `dry-run` for testing without side effects.
+
+```yaml
+# .github/workflows/publish.yml
+name: "Publish"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag or ref to publish (e.g. v3.142.1)"
+        required: true
+        type: string
+      dry_run:
+        description: "Dry run (npm --dry-run, skip GitHub release)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    uses: braintree/web-sdk-github-actions/.github/workflows/publish.yml@main
+    with:
+      ref: ${{ inputs.ref }}
+      dry-run: ${{ inputs.dry_run }}
+    secrets:
+      npm-token: ${{ secrets.BRAINTREE_NPM_ACCESS_TOKEN }}
+```
 
 ### Stale Cleanup
 
@@ -225,14 +264,14 @@ Skips bots, draft PRs, and PRs labeled `no-jira`.
 
 ```
 .github/workflows/
-├── ci.yml           (~15 lines)
-└── publish.yml      (~20 lines)
+├── ci.yml                (~15 lines)
+└── release-pipeline.yml  (~20 lines)
 ```
 
 ### Steps
 
 1. Replace `ci.yml` contents with the CI reusable workflow call (see above)
-2. Replace `publish.yml` + `version-bump.yml` + `release-notes.yml` with the single publish workflow call
+2. Replace `publish.yml` + `version-bump.yml` + `release-notes.yml` with the single release pipeline workflow call
 3. Delete `version-bump.yml` and `release-notes.yml`
 4. Test: trigger CI on a PR, verify lint + tests run
-5. Test: trigger publish with `workflow_dispatch` (use a patch bump on a test branch first)
+5. Test: trigger release with `workflow_dispatch` (use a patch bump on a test branch first)
