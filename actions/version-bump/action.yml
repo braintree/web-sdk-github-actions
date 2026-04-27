@@ -92,7 +92,7 @@ runs:
           --head "release/v${new_version}")
 
         pr_number=$(echo "$pr_url" | awk -F/ '{print $NF}')
-        gh pr merge "$pr_number" --auto --merge --delete-branch
+        gh pr merge "$pr_number" --auto --squash --delete-branch
 
         echo "#### Merged release PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
       shell: bash
