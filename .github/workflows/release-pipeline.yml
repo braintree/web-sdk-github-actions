@@ -19,6 +19,11 @@ on:
         required: false
         type: string
         default: "npm test"
+      base-branch:
+        description: "Branch to target for the release PR (default: main)"
+        required: false
+        type: string
+        default: "main"
       runs-on:
         description: "Runner label"
         required: false
@@ -59,6 +64,7 @@ jobs:
         uses: braintree/web-sdk-github-actions/actions/version-bump@main
         with:
           version-type: ${{ inputs.version-type }}
+          base-branch: ${{ inputs.base-branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:

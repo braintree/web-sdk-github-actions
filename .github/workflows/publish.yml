@@ -1,6 +1,6 @@
 name: "Publish Package"
 run-name: Publish ${{ github.repository }} to npmjs by @${{ github.actor }}
-description: "ONLY publishes to NPM"
+description: "Publishes to NPM and makes a Github Release"
 
 on:
   workflow_dispatch:
