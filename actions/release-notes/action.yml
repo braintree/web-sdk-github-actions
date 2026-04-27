@@ -5,6 +5,10 @@ inputs:
   github-token:
     description: "GitHub token for creating releases"
     required: true
+  dry-run:
+    description: "Skip creating the GitHub release (extract and log notes only)"
+    required: false
+    default: "false"
 
 outputs:
   version:
@@ -38,6 +42,7 @@ runs:
       shell: bash
 
     - name: "Create GitHub release"
+      if: ${{ inputs.dry-run != 'true' }}
       run: |
         gh release create "${{ steps.version.outputs.latest_version }}" \
           --title "v${{ steps.version.outputs.latest_version }}" \
