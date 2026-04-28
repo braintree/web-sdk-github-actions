@@ -9,6 +9,10 @@ inputs:
     description: "npm registry URL"
     required: false
     default: "https://registry.npmjs.org/"
+  dry-run:
+    description: "Run npm publish with --dry-run (no package is actually published)"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -28,7 +32,7 @@ runs:
       shell: bash
 
     - name: "Publish to npm"
-      run: npm publish --provenance
+      run: npm publish --provenance ${{ inputs.dry-run == 'true' && '--dry-run' || '' }}
       env:
         NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
       shell: bash

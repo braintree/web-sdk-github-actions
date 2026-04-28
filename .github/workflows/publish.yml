@@ -1,23 +1,35 @@
-name: "Publish to npm"
-run-name: Deploy ${{ github.repository }} to npmjs by @${{ github.actor }}
+name: "Publish Package"
+run-name: Publish ${{ github.repository }} to npmjs by @${{ github.actor }}
+description: "Publishes to NPM and makes a Github Release"
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      version-type:
-        description: "Version bump type (major, minor, patch)"
+      ref:
+        description: "Tag or ref to publish (e.g. v3.142.1)"
         required: true
         type: string
-      lint-command:
-        description: "Lint command for CI step (set to empty string to skip)"
+      dry-run:
+        description: "Run publish steps without side effects (npm --dry-run, skip GitHub release)"
+        required: false
+        type: boolean
+        default: false
+      runs-on:
+        description: "Runner label"
         required: false
         type: string
-        default: "npx eslint . --ext .js,.ts"
-      test-command:
-        description: "Test command for CI step"
-        required: false
+        default: "ubuntu-latest"
+  workflow_call:
+    inputs:
+      ref:
+        description: "Tag or ref to publish (e.g. v3.142.1)"
+        required: true
         type: string
-        default: "npm test"
+      dry-run:
+        description: "Run publish steps without side effects (npm --dry-run, skip GitHub release)"
+        required: false
+        type: boolean
+        default: false
       runs-on:
         description: "Runner label"
         required: false
@@ -35,43 +47,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@main
-    with:
-      lint-command: ${{ inputs.lint-command }}
-      test-command: ${{ inputs.test-command }}
-      runs-on: ${{ inputs.runs-on }}
-
-  bump-version:
-    needs: ci
-    runs-on: ${{ inputs.runs-on }}
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      new-version: ${{ steps.bump.outputs.new-version }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: "Bump version"
-        id: bump
-        uses: braintree/web-sdk-github-actions/actions/version-bump@main
-        with:
-          version-type: ${{ inputs.version-type }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
   publish-npm:
-    needs: bump-version
     runs-on: ${{ inputs.runs-on }}
     permissions:
       id-token: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: "Publish to npm"
         uses: braintree/web-sdk-github-actions/actions/npm-publish@main
         with:
           npm-token: ${{ secrets.npm-token }}
+          dry-run: ${{ inputs.dry-run }}
 
   publish-release:
     needs: publish-npm
@@ -80,8 +69,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: "Create release notes"
         uses: braintree/web-sdk-github-actions/actions/release-notes@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: ${{ inputs.dry-run }}

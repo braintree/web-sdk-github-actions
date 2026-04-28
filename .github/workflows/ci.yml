@@ -45,4 +45,5 @@ jobs:
         run: ${{ inputs.lint-command }}
 
       - name: "Test"
+        if: inputs.test-command != ''
         run: ${{ inputs.test-command }}
