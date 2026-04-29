@@ -33,12 +33,12 @@ runs:
   using: "composite"
   steps:
     - name: "Check PR title follows conventional commits"
-      uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50
-      env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
+      uses: braintree/web-sdk-github-actions/.github/workflows/pr-title-validation@main
       with:
-        types: ${{ inputs.conventional-commit-types }}
-        scopes: ${{ inputs.conventional-commit-scopes }}
+        github-token: ${{ inputs.github-token }}
+        conventional-commit-types: ${{ inputs.conventional-commit-types }}
+        conventional-commit-scopes: ${{ inputs.conventional-commit-scopes }}
+        runs-on: ${{ inputs.runs-on }}
 
     - name: "Check for Jira ticket reference"
       env:
