@@ -1,13 +1,8 @@
-name: "PR Validation"
+name: "PR Title Validation"
 
 on:
   workflow_call:
     inputs:
-      jira-url-pattern:
-        description: "Regex pattern for Jira ticket URLs in PR body"
-        required: false
-        type: string
-        default: 'https://paypal\.atlassian\.net/browse/[A-Z]+-[0-9]+'
       conventional-commit-types:
         description: "Newline-separated list of allowed conventional commit types"
         required: false
@@ -44,17 +39,11 @@ permissions:
 
 jobs:
   pr-validation:
-    if: >-
-      github.actor != 'dependabot[bot]' &&
-      !contains(github.actor, '[bot]') &&
-      !contains(github.event.pull_request.labels.*.name, 'no-jira') &&
-      github.event.pull_request.draft == false
     runs-on: ${{ inputs.runs-on }}
     steps:
       - name: "Validate PR"
         uses: braintree/web-sdk-github-actions/actions/validate-pr@main
         with:
           github-token: ${{ secrets.github-token }}
-          jira-url-pattern: ${{ inputs.jira-url-pattern }}
           conventional-commit-types: ${{ inputs.conventional-commit-types }}
           conventional-commit-scopes: ${{ inputs.conventional-commit-scopes }}
