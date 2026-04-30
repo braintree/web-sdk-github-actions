@@ -1,8 +1,13 @@
-name: "PR Title Validation"
+name: "Validate PR"
 
 on:
   workflow_call:
     inputs:
+      jira-url-pattern:
+        description: "Regex pattern for Jira ticket URLs in PR body"
+        required: false
+        default: 'https://paypal\.atlassian\.net/browse/[A-Z]+-[0-9]+'
+        type: string
       conventional-commit-types:
         description: "Newline-separated list of allowed conventional commit types"
         required: false
@@ -38,10 +43,6 @@ on:
       github-token:
         required: true
 
-permissions:
-  contents: read
-  pull-requests: read
-
 jobs:
   pr-validation:
     runs-on: ${{ inputs.runs-on }}
@@ -53,3 +54,26 @@ jobs:
           types: ${{ inputs.conventional-commit-types }}
           scopes: ${{ inputs.conventional-commit-scopes }}
           ignoreLabels: ${{ inputs.ignore-labels }}
+
+  jira-reference-check:
+    permissions:
+      pull-requests: read
+      contents: read
+    name: "Jira Reference Check"
+    if:
+      "github.actor != 'dependabot[bot]' && !contains(github.actor, '[bot]') &&
+      !contains(github.event.pull_request.labels.*.name, 'no-jira') &&
+      github.event.pull_request.draft == false"
+    runs-on: gh-2-core-ubuntu-latest
+    steps:
+      - env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          PATTERN='https://paypal\.atlassian\.net/browse/[A-Z]+-[0-9]+'
+          if echo "$PR_BODY" | grep -qE "$PATTERN"; then
+            echo "Jira ticket found"
+          else
+            echo "::error::Missing Jira ticket link in PR body. Include the full Jira ticket link:"
+            echo "  | [Jira ticket](https://paypal.atlassian.net/browse/DTBTWEB-123) |"
+            exit 1
+          fi
