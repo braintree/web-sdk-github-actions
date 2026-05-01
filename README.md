@@ -225,23 +225,62 @@ jobs:
     #   exempt-pr-labels: "dependencies"         # default
 ```
 
-### PR Jira Check
+### PR Title Validation
 
-Require a Jira ticket link in PR body.
+Validate that the PR title follows conventional commits.
+
+This file is to be used on **PRs in public/OSS repos**, which we do not link Jira tickets on.
 
 ```yaml
-# .github/workflows/pr-jira-check.yml
-name: "PR Jira Check"
+# .github/workflows/pr-title-validation.yml
+name: "PR Title Validation"
 
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize, labeled]
 
 jobs:
-  check:
-    uses: braintree/web-sdk-github-actions/.github/workflows/pr-jira-check.yml@main
-    # with:
-    #   jira-url-pattern: 'https://paypal\.atlassian\.net/browse/[A-Z]+-[0-9]+'
+  validate:
+    uses: braintree/web-sdk-github-actions/.github/workflows/pr-title-validation.yml@main
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+    # with:                                                    # all optional
+    #   conventional-commit-types: |                          # default list of types
+    #     feat
+    #     fix
+    #     ...
+    #   conventional-commit-scopes: ""                        # default: any scope allowed
+    #   ignore-labels: ""                                     # labels that skip title validation
+    #   runs-on: "ubuntu-latest"                              # default
+```
+
+### PR Title + Jira Validation
+
+Validate PR title follows conventional commits **and** require a Jira ticket link in the PR body.
+
+This file is to be used on **PRs in internal repos**, as we expect a Jira link on each PR.
+
+```yaml
+# .github/workflows/pr-title-jira-validation.yml
+name: "Validate PR"
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, labeled]
+
+jobs:
+  validate:
+    uses: braintree/web-sdk-github-actions/.github/workflows/pr-title-jira-validation.yml@main
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+    # with:                                                    # all optional
+    #   conventional-commit-types: |                          # default list of types
+    #     feat
+    #     fix
+    #     ...
+    #   conventional-commit-scopes: ""                        # default: any scope allowed
+    #   ignore-labels: ""                                     # labels that skip title validation
+    #   runs-on: "ubuntu-latest"                              # default
 ```
 
 Skips bots, draft PRs, and PRs labeled `no-jira`.
@@ -252,7 +291,7 @@ Skips bots, draft PRs, and PRs labeled `no-jira`.
 
 ### Before (typical repo — 3 workflow files)
 
-```
+```text
 .github/workflows/
 ├── ci.yml           (~25 lines)
 ├── publish.yml      (~50 lines)
@@ -262,7 +301,7 @@ Skips bots, draft PRs, and PRs labeled `no-jira`.
 
 ### After (same repo — 2 workflow files)
 
-```
+```text
 .github/workflows/
 ├── ci.yml                (~15 lines)
 └── release-pipeline.yml  (~20 lines)
