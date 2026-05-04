@@ -1,0 +1,103 @@
+name: "Run Dry Release (no publication)"
+run-name: Dry run release of ${{ github.repository }} to npmjs by @${{ github.actor }}
+description: "Dry runs steps of: CI, version_bump, npm publication, Github release notes"
+
+on:
+  workflow_call:
+    inputs:
+      version-type:
+        description: "Version bump type (major, minor, patch)"
+        required: true
+        type: string
+      lint-command:
+        description: "Lint command for CI step (set to empty string to skip)"
+        required: false
+        type: string
+        default: "npx eslint . --ext .js,.ts"
+      test-command:
+        description: "Test command for CI step"
+        required: false
+        type: string
+        default: "npm test"
+      runs-on:
+        description: "Runner label"
+        required: false
+        type: string
+        default: "ubuntu-latest"
+    secrets:
+      npm-token:
+        description: "npm access token (e.g. BRAINTREE_NPM_ACCESS_TOKEN)"
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: npm-dry-run
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@main
+    with:
+      lint-command: ${{ inputs.lint-command }}
+      test-command: ${{ inputs.test-command }}
+      runs-on: ${{ inputs.runs-on }}
+
+  bump-version:
+    needs: ci
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      contents: read
+    outputs:
+      new-version: ${{ steps.bump.outputs.new_version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: "Setup Node.js"
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: "Simulate version bump (dry run — no commit, branch, or tag)"
+        id: bump
+        env:
+          VERSION_TYPE: ${{ inputs.version-type }}
+        run: |
+          case "$VERSION_TYPE" in
+            beta|alpha|rc)
+              current_version=$(node -p "require('./package.json').version")
+              if [[ "$current_version" == *"-"* ]]; then
+                new_version=$(npm version prerelease --preid="$VERSION_TYPE" --no-git-tag-version)
+              else
+                new_version=$(npm version preminor --preid="$VERSION_TYPE" --no-git-tag-version)
+              fi
+              ;;
+            *)
+              new_version=$(npm version "$VERSION_TYPE" --no-git-tag-version)
+              ;;
+          esac
+          new_version=${new_version#v}
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "### Version Bump (dry run)" >> "$GITHUB_STEP_SUMMARY"
+          echo "${VERSION_TYPE} → **${new_version}**" >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+
+  publish-npm:
+    needs: bump-version
+    runs-on: ${{ inputs.runs-on }}
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: "Publish to npm (dry run)"
+        uses: braintree/web-sdk-github-actions/actions/npm-publish@main
+        with:
+          dry-run: "true"
+          npm-token: ${{ secrets.npm-token }}
+
+      - name: "Log target version"
+        run: |
+          echo "### npm Publish (dry run)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Would publish **v${{ needs.bump-version.outputs.new-version }}** to npm" >> "$GITHUB_STEP_SUMMARY"
+        shell: bash

@@ -1,6 +1,6 @@
 name: "Release package"
 run-name: Deploy ${{ github.repository }} to npmjs by @${{ github.actor }}
-description: "Runs CI, bumps version, and publishes to NPM"
+description: "Runs CI, bumps version, publishes to NPM, and generates Github release notes"
 
 on:
   workflow_call:
