@@ -1,0 +1,47 @@
+name: "Check files changed"
+description: "Checks for markdown-only changes; outputs {src_changed=true} if any other file type modified"
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: "Runner label"
+        required: false
+        type: string
+        default: "ubuntu-latest"
+    outputs:
+      src_changed:
+        description: "Whether significant file changes (i.e., other than markdown) have occurred"
+        value: ${{ jobs.check_files_changed.outputs.src_changed }}
+
+permissions:
+  contents: read
+
+jobs:
+  check_files_changed:
+    runs-on: ${{ inputs.runs-on }}
+    env:
+      BASE_REF: ${{ github.base_ref }}
+    outputs:
+      src_changed: ${{ steps.check_file_changed.outputs.src_changed }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - id: check_file_changed
+        shell: bash
+        run: |
+          # No base ref on push or workflow_dispatch — therefore all changes are significant          if [ -z "$BASE_REF" ]; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Diff all PR commits against the base branch
+          # Check for non markdown changes
+          non_md_diff=$(git diff --name-only "origin/$BASE_REF...HEAD" | grep -v '\.md$' || true)
+
+          if [ -n "$non_md_diff" ]; then
+            echo "src_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "src_changed=false" >> "$GITHUB_OUTPUT"
+          fi
