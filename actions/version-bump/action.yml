@@ -15,11 +15,15 @@ inputs:
   feature-tag:
     description: "Optional feature tag for pre-releases; e.g. `3ds` produces `3.135.0-beta-3ds.1`"
     required: false
+  dry-run:
+    description: "Skip creating the GitHub release (extract and log notes only)"
+    required: false
+    default: false
 
 outputs:
   new-version:
     description: "The new version number (without v prefix)"
-    value: ${{ steps.bump.outputs.new_version }}
+    value: ${{ steps.bump.outputs.new_version || steps.dry-run.outputs.new_version }}
 
 runs:
   using: "composite"
@@ -44,6 +48,7 @@ runs:
         node-version-file: .nvmrc
 
     - name: "Bump version and update CHANGELOG"
+      if: ${{ inputs.dry-run != 'true' }}
       id: bump
       env:
         VERSION_TYPE: ${{ inputs.version-type }}
@@ -81,6 +86,7 @@ runs:
       shell: bash
 
     - name: "Create release branch and PR"
+      if: ${{ inputs.dry-run != 'true' }}
       env:
         BASE_BRANCH: ${{ inputs.base-branch }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -113,9 +119,53 @@ runs:
         done
 
         git checkout "$BASE_BRANCH"
-        git pull
+        git pull origin "$BASE_BRANCH"
         git tag -m "v${new_version}" "v${new_version}"
         git push origin "v${new_version}"
 
         echo "#### Merged release PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
+      shell: bash
+
+      # simulates version bump and publishes theoretical output
+    - name: "Dry Run Report"
+      if: ${{ inputs.dry-run == 'true' }}
+      id: dry-run
+      env:
+        VERSION_TYPE: ${{ inputs.version-type }}
+        FEATURE_TAG: ${{ inputs.feature-tag }}
+        BASE_BRANCH: ${{ inputs.base-branch }}
+      run: |
+        current_version=$(node -p "require('./package.json').version")
+        case "$VERSION_TYPE" in
+          beta|alpha|rc)
+            if [ -n "$FEATURE_TAG" ]; then
+              PREID="${VERSION_TYPE}-${FEATURE_TAG}"
+            else
+              PREID="$VERSION_TYPE"
+            fi
+            if [[ "$current_version" == *"-"* ]]; then
+              new_version=$(npx semver "$current_version" --preid="$PREID" -i prerelease)
+            else
+              new_version=$(npx semver "$current_version" --preid="$PREID" -i preminor)
+            fi
+            ;;
+          *)
+            new_version=$(npx semver "$current_version" -i "$VERSION_TYPE")
+            ;;
+        esac
+
+        new_version=${new_version#v}
+        echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+        echo "${VERSION_TYPE} → **${new_version}**" >> "$GITHUB_STEP_SUMMARY"
+
+        echo "=================================="
+        echo "  DRY RUN — no changes were made"
+        echo "=================================="
+        echo "Repository       : ${{ github.repository }}"
+        echo "Actor            : ${{ github.actor }}"
+        echo "Base branch      : ${{ env.BASE_BRANCH }}"
+        echo "Bump type        : ${{ env.VERSION_TYPE }}"
+        echo "Feature tag      : ${{ env.FEATURE_TAG }}"
+        echo "Expected version : $new_version"
+        echo "=================================="
       shell: bash
