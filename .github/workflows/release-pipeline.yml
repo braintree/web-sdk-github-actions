@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: "ubuntu-latest"
+      dry-run:
+        description: "Simulate the release without publishing to npm or creating a GitHub release"
+        required: false
+        type: boolean
+        default: false
     secrets:
       npm-token:
         description: "npm access token (e.g. BRAINTREE_NPM_ACCESS_TOKEN)"
@@ -66,6 +71,7 @@ jobs:
           version-type: ${{ inputs.version-type }}
           base-branch: ${{ inputs.base-branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: ${{ inputs.dry-run }}
 
   publish-npm:
     needs: bump-version
@@ -79,6 +85,7 @@ jobs:
         uses: braintree/web-sdk-github-actions/actions/npm-publish@main
         with:
           npm-token: ${{ secrets.npm-token }}
+          dry-run: ${{ inputs.dry-run }}
 
   publish-release:
     needs: publish-npm
@@ -92,3 +99,4 @@ jobs:
         uses: braintree/web-sdk-github-actions/actions/release-notes@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          dry-run: ${{ inputs.dry-run }}
