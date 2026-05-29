@@ -11,6 +11,6 @@ if (entries.length === 0) {
 }
 
 execSync(
-  `npx esbuild ${entries.join(' ')} --bundle --platform=node --outdir=dist --target=node24`,
+  `npx esbuild ${entries.join(' ')} --bundle --platform=node --outdir=dist --target=node24 --minify`,
   { stdio: 'inherit' }
 );

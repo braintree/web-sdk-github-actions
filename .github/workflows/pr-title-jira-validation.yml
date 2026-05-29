@@ -66,14 +66,7 @@ jobs:
       github.event.pull_request.draft == false"
     runs-on: gh-2-core-ubuntu-latest
     steps:
-      - env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          PATTERN='https://paypal\.atlassian\.net/browse/[A-Z]+-[0-9]+'
-          if echo "$PR_BODY" | grep -qE "$PATTERN"; then
-            echo "Jira ticket found"
-          else
-            echo "::error::Missing Jira ticket link in PR body. Include the full Jira ticket link:"
-            echo "  | [Jira ticket](https://paypal.atlassian.net/browse/DTBTWEB-123) |"
-            exit 1
-          fi
+      - uses: braintree/web-sdk-github-actions/actions/check-jira-reference@main
+        with:
+          pr-body: ${{ github.event.pull_request.body }}
+          jira-url-pattern: ${{ inputs.jira-url-pattern }}
