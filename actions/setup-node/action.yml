@@ -14,6 +14,10 @@ inputs:
     description: "npm registry URL (set when publishing to configure auth)"
     required: false
     default: ""
+  cache:
+    description: "Package manager to cache (npm, yarn, pnpm). Set to empty string to disable caching."
+    required: false
+    default: "npm"
 
 runs:
   using: "composite"
@@ -23,6 +27,7 @@ runs:
       with:
         node-version-file: ${{ inputs.node-version-file }}
         registry-url: ${{ inputs.registry-url || '' }}
+        cache: ${{ inputs.cache }}
 
     - name: "Install global npm"
       run: npm install -g npm
