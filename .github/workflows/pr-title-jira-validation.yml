@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       jira-url-pattern:
-        description: "Regex pattern for Jira ticket URLs in PR body"
+        description: "Regex pattern for Jira ticket URLs in PR body. Leave blank to skip ticket check."
         required: false
         default: 'https://paypal\.atlassian\.net/browse/[A-Z]+-[0-9]+'
         type: string
@@ -35,7 +35,7 @@ on:
         type: string
         default: "ubuntu-latest"
       ignore-labels:
-        description: "Newline-delimited labels that will skip title validation"
+        description: "Newline-delimited labels that will skip conventional-commit title validation"
         required: false
         type: string
         default: ""
@@ -59,21 +59,15 @@ jobs:
     permissions:
       pull-requests: read
       contents: read
-    name: "Jira Reference Check"
-    if:
-      "github.actor != 'dependabot[bot]' && !contains(github.actor, '[bot]') &&
+    name: "Check for Jira ticket reference"
+    if: "!contains(github.actor, '[bot]') &&
       !contains(github.event.pull_request.labels.*.name, 'no-jira') &&
-      github.event.pull_request.draft == false"
+      github.event.pull_request.draft == false &&
+      inputs.jira-url-pattern != ''"
     runs-on: gh-2-core-ubuntu-latest
     steps:
-      - env:
+      - run: node '${{ github.action_path }}/../../dist/check-jira-reference.js'
+        shell: bash
+        env:
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          PATTERN='https://paypal\.atlassian\.net/browse/[A-Z]+-[0-9]+'
-          if echo "$PR_BODY" | grep -qE "$PATTERN"; then
-            echo "Jira ticket found"
-          else
-            echo "::error::Missing Jira ticket link in PR body. Include the full Jira ticket link:"
-            echo "  | [Jira ticket](https://paypal.atlassian.net/browse/DTBTWEB-123) |"
-            exit 1
-          fi
+          JIRA_PATTERN: ${{ inputs.jira-url-pattern }}
