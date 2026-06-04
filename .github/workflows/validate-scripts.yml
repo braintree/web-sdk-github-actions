@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   validate:
-    name: "Build & validate dist/"
+    name: "Validate new scripts build"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -24,6 +24,24 @@ jobs:
       - run: npm ci
 
       - run: npm run build
+          echo "Build OK"
 
+  commit-dist-files:
+    name: "Commit built script files"
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
       - name: "Verify dist/ is up to date"
         run: git diff --exit-code -- dist/
+
+      - name: Commit and push built files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Add built scripts"
+            git push origin main
+          fi
