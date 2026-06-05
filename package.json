@@ -19,7 +19,7 @@
     "typescript": "^5.8.0"
   },
   "overrides": {
-    "undici": "^8.3.0"
+    "undici": "^6.23.0"
   },
   "allowScripts": {
     "esbuild@0.25.12": true
