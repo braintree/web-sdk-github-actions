@@ -16,156 +16,45 @@ inputs:
     description: "Optional feature tag for pre-releases; e.g. `3ds` produces `3.135.0-beta-3ds.1`"
     required: false
   dry-run:
-    description: "Skip creating the GitHub release (extract and log notes only)"
+    description: "Simulate the version bump without making any changes"
     required: false
-    default: false
+    default: "false"
 
 outputs:
   new-version:
     description: "The new version number (without v prefix)"
-    value: ${{ steps.bump.outputs.new_version || steps.dry-run.outputs.new_version }}
+    value: ${{ steps.bump.outputs.new_version }}
 
 runs:
   using: "composite"
   steps:
-    - name: "Configure git credentials"
-      run: |
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
-      shell: bash
-
-    - name: "Validate CHANGELOG"
-      run: |
-        if ! grep -i -q "## UNRELEASED" CHANGELOG.md; then
-          echo "::error::UNRELEASED section not found in CHANGELOG.md"
-          exit 1
-        fi
-      shell: bash
+    - uses: ${{ github.action_path }}/../setup-git
 
     - name: "Setup Node.js"
       uses: actions/setup-node@v6
       with:
         node-version-file: .nvmrc
 
+    - name: "Validate CHANGELOG"
+      run: node '${{ github.action_path }}/../../dist/validate-changelog.js'
+      shell: bash
+
     - name: "Bump version and update CHANGELOG"
-      if: ${{ inputs.dry-run != 'true' }}
       id: bump
+      run: node '${{ github.action_path }}/../../dist/bump-version.js'
+      shell: bash
       env:
         VERSION_TYPE: ${{ inputs.version-type }}
         FEATURE_TAG: ${{ inputs.feature-tag }}
-      run: |
-        case "$VERSION_TYPE" in
-          beta|alpha|rc)
-            if [ -n "$FEATURE_TAG" ]; then
-              preid="${VERSION_TYPE}-${FEATURE_TAG}"
-            else
-              preid="$VERSION_TYPE"
-            fi
-            current_version=$(node -p "require('./package.json').version")
-            if [[ "$current_version" == *"-"* ]]; then
-              new_version=$(npm version prerelease --preid="$preid" --no-git-tag-version)
-            else
-              new_version=$(npm version preminor --preid="$preid" --no-git-tag-version)
-            fi
-            ;;
-          *)
-            new_version=$(npm version "$VERSION_TYPE" --no-git-tag-version)
-            ;;
-        esac
-        new_version=${new_version#v}
-        echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+        BASE_BRANCH: ${{ inputs.base-branch }}
+        DRY_RUN: ${{ inputs.dry-run }}
 
-        today=$(date +'%Y-%m-%d')
-        sed -i "s/## unreleased/## ${new_version} (${today})/i" CHANGELOG.md
-
-        git add package.json package-lock.json CHANGELOG.md
-        git commit -m "Release v${new_version}"
-
-        echo "### Version Bump" >> "$GITHUB_STEP_SUMMARY"
-        echo "${VERSION_TYPE} → **${new_version}**" >> "$GITHUB_STEP_SUMMARY"
-      shell: bash
-
-    - name: "Create release branch and PR"
+    - name: "Create release branch, PR, and tag"
       if: ${{ inputs.dry-run != 'true' }}
+      run: node '${{ github.action_path }}/../../dist/release-pr.js'
+      shell: bash
       env:
+        NEW_VERSION: ${{ steps.bump.outputs.new_version }}
         BASE_BRANCH: ${{ inputs.base-branch }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-      run: |
-        new_version="${{ steps.bump.outputs.new_version }}"
-        git checkout -b "release/v${new_version}"
-        git push -u origin "release/v${new_version}"
-
-        pr_url=$(gh pr create \
-          --title "Release v${new_version}" \
-          --body "Updated changelog for release v${new_version}" \
-          --base "$BASE_BRANCH" \
-          --head "release/v${new_version}")
-
-        pr_number=$(echo "$pr_url" | awk -F/ '{print $NF}')
-        gh pr merge "$pr_number" --auto --squash --delete-branch
-
-        echo "Waiting for PR to merge..."
-        for i in $(seq 1 20); do
-          state=$(gh pr view "$pr_number" --json state --jq '.state')
-          if [ "$state" = "MERGED" ]; then
-            echo "PR merged"
-            break
-          fi
-          if [ "$i" -eq 20 ]; then
-            echo "::error::Timed out waiting for PR to merge"
-            exit 1
-          fi
-          sleep 30
-        done
-
-        git checkout "$BASE_BRANCH"
-        git pull origin "$BASE_BRANCH"
-        git tag -m "v${new_version}" "v${new_version}"
-        git push origin "v${new_version}"
-
-        echo "#### Merged release PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
-      shell: bash
-
-      # simulates version bump and publishes theoretical output
-    - name: "Dry Run Report"
-      if: ${{ inputs.dry-run == 'true' }}
-      id: dry-run
-      env:
-        VERSION_TYPE: ${{ inputs.version-type }}
-        FEATURE_TAG: ${{ inputs.feature-tag }}
-        BASE_BRANCH: ${{ inputs.base-branch }}
-      run: |
-        current_version=$(node -p "require('./package.json').version")
-        case "$VERSION_TYPE" in
-          beta|alpha|rc)
-            if [ -n "$FEATURE_TAG" ]; then
-              PREID="${VERSION_TYPE}-${FEATURE_TAG}"
-            else
-              PREID="$VERSION_TYPE"
-            fi
-            if [[ "$current_version" == *"-"* ]]; then
-              new_version=$(npx semver "$current_version" --preid="$PREID" -i prerelease)
-            else
-              new_version=$(npx semver "$current_version" --preid="$PREID" -i preminor)
-            fi
-            ;;
-          *)
-            new_version=$(npx semver "$current_version" -i "$VERSION_TYPE")
-            ;;
-        esac
-
-        new_version=${new_version#v}
-        echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
-        echo "${VERSION_TYPE} → **${new_version}**" >> "$GITHUB_STEP_SUMMARY"
-
-        echo "=================================="
-        echo "  DRY RUN — no changes were made"
-        echo "=================================="
-        echo "Repository       : ${{ github.repository }}"
-        echo "Actor            : ${{ github.actor }}"
-        echo "Base branch      : ${{ env.BASE_BRANCH }}"
-        echo "Bump type        : ${{ env.VERSION_TYPE }}"
-        echo "Feature tag      : ${{ env.FEATURE_TAG }}"
-        echo "Expected version : $new_version"
-        echo "=================================="
-      shell: bash
+        GITHUB_REPOSITORY: ${{ github.repository }}
