@@ -1,0 +1,24 @@
+name: "Setup Git"
+description: "Configure git user identity for automated commits"
+
+inputs:
+  user-name:
+    description: "Git user.name"
+    required: false
+    default: "github-actions[bot]"
+  user-email:
+    description: "Git user.email"
+    required: false
+    default: "github-actions[bot]@users.noreply.github.com"
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Configure git identity"
+      run: |
+        git config user.name "$GIT_USER_NAME"
+        git config user.email "$GIT_USER_EMAIL"
+      shell: bash
+      env:
+        GIT_USER_NAME: ${{ inputs.user-name }}
+        GIT_USER_EMAIL: ${{ inputs.user-email }}
