@@ -18,7 +18,6 @@ jobs:
       - name: "Setup Node Environment"
         uses: braintree/web-sdk-github-actions/actions/setup-node@main
         with:
-          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci

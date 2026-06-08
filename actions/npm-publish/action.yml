@@ -20,12 +20,9 @@ runs:
     - name: "Setup Node Environment"
       uses: braintree/web-sdk-github-actions/actions/setup-node@main
       with:
-        node-version-file: .nvmrc
         registry-url: ${{ inputs.registry-url }}
-
-    - name: "Install dependencies"
-      run: npm ci
-      shell: bash
+        cache: npm
+        install-dependencies: true
 
     - name: "Publish to npm"
       run: npm publish --provenance ${{ inputs.dry-run == 'true' && '--dry-run' || '' }}

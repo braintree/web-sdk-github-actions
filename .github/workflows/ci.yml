@@ -38,6 +38,7 @@ jobs:
       - name: "Setup Node Environment"
         uses: braintree/web-sdk-github-actions/actions/setup-node@main
         with:
+          cache: npm
           node-version-file: ${{ inputs.node-version-file }}
 
       - name: "Lint"
