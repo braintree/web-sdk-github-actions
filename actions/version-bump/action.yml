@@ -31,7 +31,7 @@ runs:
     - uses: ${{ github.action_path }}/../setup-git
 
     - name: "Setup Node.js"
-      uses: actions/setup-node@v6
+      uses: braintree/web-sdk-github-actions/actions/setup-node@main
       with:
         node-version-file: .nvmrc
 

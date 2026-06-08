@@ -15,7 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v6
+      - name: "Setup Node Environment"
+        uses: braintree/web-sdk-github-actions/actions/setup-node@main
         with:
           node-version-file: .nvmrc
           cache: npm

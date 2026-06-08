@@ -17,8 +17,8 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: "Setup Node.js with registry"
-      uses: actions/setup-node@v6
+    - name: "Setup Node Environment"
+      uses: braintree/web-sdk-github-actions/actions/setup-node@main
       with:
         node-version-file: .nvmrc
         registry-url: ${{ inputs.registry-url }}
