@@ -18,6 +18,11 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: "Setup Node Environment"
+      uses: braintree/web-sdk-github-actions/actions/setup-node@main
+      with:
+        cache: npm
+
     - name: "Checkout latest main"
       run: |
         git checkout main
@@ -33,12 +38,7 @@ runs:
 
     - name: "Extract release notes from CHANGELOG"
       id: notes
-      run: |
-        {
-          echo 'release_details<<EOF'
-          awk '/^## / { if (p) exit; p=1 } p' CHANGELOG.md | sed '1d'
-          echo EOF
-        } >> "$GITHUB_OUTPUT"
+      run: node '${{ github.action_path }}/../../dist/extract-release-notes.js'
       shell: bash
 
     - name: "Create GitHub release"
