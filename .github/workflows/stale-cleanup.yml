@@ -43,6 +43,11 @@ on:
         required: false
         type: string
         default: "dependencies"
+      start-date:
+        description: "Ignore issues/PRs created before this date (ISO 8601)"
+        required: false
+        type: string
+        default: ""
       runs-on:
         description: "Runner label"
         required: false
@@ -60,9 +65,10 @@ jobs:
       pull-requests: write
     steps:
       - name: "Mark stale issues and PRs"
-        uses: actions/stale@v10
+        uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899 # v10
         with:
           operations-per-run: 500
+          start-date: ${{ inputs.start-date }}
           days-before-issue-stale: ${{ inputs.issue-days-stale }}
           days-before-issue-close: ${{ inputs.issue-days-close }}
           stale-issue-message: >-
