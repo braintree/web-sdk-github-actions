@@ -65,7 +65,7 @@ jobs:
       pull-requests: write
     steps:
       - name: "Mark stale issues and PRs"
-        uses: actions/stale@v10
+        uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899 # v10
         with:
           operations-per-run: 500
           start-date: ${{ inputs.start-date }}
