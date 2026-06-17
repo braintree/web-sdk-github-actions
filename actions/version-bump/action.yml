@@ -28,7 +28,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: ${{ github.action_path }}/../setup-git
+    - uses: braintree/web-sdk-github-actions/actions/setup-git@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
 
     - name: "Setup Node.js"
       uses: braintree/web-sdk-github-actions/actions/setup-node@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
