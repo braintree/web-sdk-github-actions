@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: "Setup Node Environment"
-        uses: braintree/web-sdk-github-actions/actions/setup-node@main
+        uses: braintree/web-sdk-github-actions/actions/setup-node@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
         with:
           cache: npm
           node-version-file: ${{ inputs.node-version-file }}

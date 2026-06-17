@@ -18,6 +18,19 @@ steps:
       registry-url: ""                # set when publishing to npm
 ```
 
+### `actions/setup-git`
+
+Configure git user identity for automated commits.
+
+```yaml
+steps:
+  - uses: actions/checkout@v6
+  - uses: braintree/web-sdk-github-actions/actions/setup-git@main
+    with:
+      user-name: "github-actions[bot]"                                  # default
+      user-email: "github-actions[bot]@users.noreply.github.com"        # default
+```
+
 ### `actions/version-bump`
 
 Validate CHANGELOG, bump npm version, create release branch + PR, merge, and tag.
@@ -27,8 +40,11 @@ steps:
   - uses: actions/checkout@v6
   - uses: braintree/web-sdk-github-actions/actions/version-bump@main
     with:
-      version-type: "patch"           # required: patch | minor | major
+      version-type: "patch"           # required: patch | minor | major | beta | alpha | rc
       github-token: ${{ secrets.GITHUB_TOKEN }}
+      base-branch: "main"             # default; branch to target for the release PR
+      feature-tag: ""                 # optional pre-release tag, e.g. "3ds" → 3.135.0-beta-3ds.1
+      dry-run: "false"                # set to "true" to simulate without commit/branch/PR/tag
 ```
 
 **Outputs:** `new-version` — the bumped version string (without `v` prefix).
@@ -167,6 +183,35 @@ jobs:
 
 This single file replaces the previous `publish.yml` + `version-bump.yml` + `release-notes.yml` (3 files → 1).
 
+### Release Dry Run
+
+Runs the full release pipeline (CI → version bump → npm publish → release notes) without any side effects. Useful for validating a release before cutting it. Note: the bump step is simulated inline (no commit, branch, or tag); it does not call `version-bump`.
+
+```yaml
+# .github/workflows/release-dry-run.yml
+name: "Release (dry run)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: "Version bump type (major, minor, patch)"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  dry-run:
+    uses: braintree/web-sdk-github-actions/.github/workflows/release-dry-run.yml@main
+    with:
+      version-type: ${{ inputs.version_type }}
+    secrets:
+      npm-token: ${{ secrets.BRAINTREE_NPM_ACCESS_TOKEN }}
+```
+
 ### Publish
 
 Publish-only workflow: npm publish → GitHub release. Use this when the version has already been bumped, or to re-publish without re-running CI and the version bump. Supports `dry-run` for testing without side effects.
@@ -223,7 +268,26 @@ jobs:
     #   branch-days-close: 7                     # default
     #   exempt-branches: "^(main|gh-pages)$"     # default
     #   exempt-pr-labels: "dependencies"         # default
+    #   start-date: ""                           # ISO 8601; ignore issues/PRs created before this date
 ```
+
+### Check Files Changed
+
+Detects whether a PR contains anything beyond markdown changes. Use this as a gate to skip CI on docs-only PRs.
+
+```yaml
+# .github/workflows/ci.yml (excerpt)
+jobs:
+  check-changes:
+    uses: braintree/web-sdk-github-actions/.github/workflows/check-files-changed.yml@main
+
+  ci:
+    needs: check-changes
+    if: needs.check-changes.outputs.src_changed == 'true'
+    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@main
+```
+
+**Outputs:** `src_changed` — `"true"` when any non-markdown file changed, `"false"` otherwise.
 
 ### PR Title Validation
 
