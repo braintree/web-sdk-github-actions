@@ -19,10 +19,10 @@ async function run(): Promise<void> {
     return;
   }
 
-  const releaseBranch = `release/v${newVersion}`;
+  const releaseBranch = 'release';
   const octokit = github.getOctokit(githubToken);
 
-  await exec.exec('git', ['checkout', '-b', releaseBranch]);
+  await exec.exec('git', ['checkout', releaseBranch]);
   await exec.exec('git', ['push', '-u', 'origin', releaseBranch]);
 
   const { data: pr } = await octokit.rest.pulls.create({
