@@ -73,9 +73,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: ${{ inputs.dry-run }}
 
-  # bump-version tagged vX.Y.Z on the release branch, so publish builds from that
-  # tag, not the workflow's triggering SHA. Reuses publish.yml instead of
-  # duplicating its npm-publish + release-notes jobs here.
   publish:
     needs: bump-version
     permissions:
