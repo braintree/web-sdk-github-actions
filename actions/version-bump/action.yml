@@ -1,5 +1,5 @@
 name: "Version Bump"
-description: "Bump npm version, update CHANGELOG, create release branch + PR, merge, and tag"
+description: "Cut a release from the release branch: merge base in, bump version + CHANGELOG, tag, and open a sync PR back to base"
 
 inputs:
   version-type:
@@ -35,6 +35,25 @@ runs:
       with:
         cache: npm
 
+    - name: "Check out release branch, merge base in"
+      shell: bash
+      env:
+        BASE_BRANCH: ${{ inputs.base-branch }}
+      run: |
+        # The callers check out shallow (depth 1), but merging base into an
+        # existing release branch needs real history, so grab it all first.
+        git fetch --prune --unshallow origin 2>/dev/null || git fetch --prune origin
+
+        # First release on a repo may not have a release branch yet, so seed it
+        # from base. After this, release is where the bump commit lands.
+        if git show-ref --verify --quiet refs/remotes/origin/release; then
+          git checkout -B release origin/release
+        else
+          git checkout -B release "origin/$BASE_BRANCH"
+        fi
+
+        git merge "origin/$BASE_BRANCH" --no-edit
+
     - name: "Validate CHANGELOG"
       run: node '${{ github.action_path }}/../../dist/validate-changelog.js'
       shell: bash
@@ -49,7 +68,7 @@ runs:
         BASE_BRANCH: ${{ inputs.base-branch }}
         DRY_RUN: ${{ inputs.dry-run }}
 
-    - name: "Create release branch, PR, and tag"
+    - name: "Push release, tag, and open sync-to-base PR"
       if: ${{ inputs.dry-run != 'true' }}
       run: node '${{ github.action_path }}/../../dist/release-pr.js'
       shell: bash

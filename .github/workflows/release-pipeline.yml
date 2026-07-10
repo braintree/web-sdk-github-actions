@@ -73,30 +73,18 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: ${{ inputs.dry-run }}
 
-  publish-npm:
+  # bump-version tagged vX.Y.Z on the release branch, so publish builds from that
+  # tag, not the workflow's triggering SHA. Reuses publish.yml instead of
+  # duplicating its npm-publish + release-notes jobs here.
+  publish:
     needs: bump-version
-    runs-on: ${{ inputs.runs-on }}
     permissions:
       id-token: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: "Publish to npm"
-        uses: braintree/web-sdk-github-actions/actions/npm-publish@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
-        with:
-          npm-token: ${{ secrets.npm-token }}
-          dry-run: ${{ inputs.dry-run }}
-
-  publish-release:
-    needs: publish-npm
-    runs-on: ${{ inputs.runs-on }}
-    permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: "Create release notes"
-        uses: braintree/web-sdk-github-actions/actions/release-notes@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          dry-run: ${{ inputs.dry-run }}
+    uses: braintree/web-sdk-github-actions/.github/workflows/publish.yml@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+    with:
+      ref: v${{ needs.bump-version.outputs.new-version }}
+      dry-run: ${{ inputs.dry-run }}
+      runs-on: ${{ inputs.runs-on }}
+    secrets:
+      npm-token: ${{ secrets.npm-token }}

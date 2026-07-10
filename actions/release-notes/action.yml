@@ -23,12 +23,6 @@ runs:
       with:
         cache: npm
 
-    - name: "Checkout latest main"
-      run: |
-        git checkout main
-        git pull
-      shell: bash
-
     - name: "Get version"
       id: version
       run: |
@@ -44,7 +38,7 @@ runs:
     - name: "Create GitHub release"
       if: ${{ inputs.dry-run != 'true' }}
       run: |
-        gh release create "${{ steps.version.outputs.latest_version }}" \
+        gh release create "v${{ steps.version.outputs.latest_version }}" \
           --title "v${{ steps.version.outputs.latest_version }}" \
           --notes "${{ steps.notes.outputs.release_details }}"
       env:
