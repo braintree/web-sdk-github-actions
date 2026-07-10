@@ -37,7 +37,7 @@ on:
         description: "Regex for branches exempt from cleanup"
         required: false
         type: string
-        default: "^(main|gh-pages)$"
+        default: "^(main|gh-pages|release)$"
       exempt-pr-labels:
         description: "Comma-separated labels that exempt PRs from stale"
         required: false
