@@ -7,9 +7,19 @@ const newVersion = getRequiredEnv("NEW_VERSION");
 const baseBranch = getRequiredEnv("BASE_BRANCH");
 const githubToken = getRequiredEnv("GITHUB_TOKEN");
 const [owner, repo] = getRequiredEnv("GITHUB_REPOSITORY").split("/");
+const isDryRun = process.env.DRY_RUN === "true";
 
 async function run(): Promise<void> {
   const releaseTag = `v${newVersion}`;
+
+  if (isDryRun) {
+    core.info(
+      `DRY RUN: Skipping release branch, PR creation, and tagging. Would have tagged "${releaseTag}"`,
+    );
+
+    return;
+  }
+
   const octokit = github.getOctokit(githubToken);
 
   await exec.exec("git", ["push", "origin", "release"]);
