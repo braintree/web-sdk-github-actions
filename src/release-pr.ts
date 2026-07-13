@@ -5,6 +5,7 @@ import { getRequiredEnv } from "./utils";
 
 const newVersion = getRequiredEnv("NEW_VERSION");
 const baseBranch = getRequiredEnv("BASE_BRANCH");
+const bumpBranch = getRequiredEnv("BUMP_BRANCH");
 const githubToken = getRequiredEnv("GITHUB_TOKEN");
 const [owner, repo] = getRequiredEnv("GITHUB_REPOSITORY").split("/");
 const isDryRun = process.env.DRY_RUN === "true";
@@ -13,46 +14,28 @@ async function run(): Promise<void> {
   const releaseTag = `v${newVersion}`;
 
   if (isDryRun) {
-    core.info(
-      `DRY RUN: Skipping release branch, PR creation, and tagging. Would have tagged "${releaseTag}"`,
-    );
+    core.info(`DRY RUN: skipping branch push and PR creation for "${releaseTag}".`);
 
     return;
   }
 
+  // Push the bump branch and open a PR into the base branch. That's all we do here.
+  // A human approves and merges the PR, and the merge is what kicks off the deploy.
+  // We don't wait on the merge, and we don't tag. Tagging happens on merge.
+  await exec.exec("git", ["push", "-u", "origin", bumpBranch]);
+
   const octokit = github.getOctokit(githubToken);
-
-  await exec.exec("git", ["push", "origin", "release"]);
-
-  await exec.exec("git", ["tag", "-m", releaseTag, releaseTag]);
-  await exec.exec("git", ["push", "origin", releaseTag]);
-
   const { data: pr } = await octokit.rest.pulls.create({
     owner,
     repo,
     title: `Release ${releaseTag}`,
-    body: `Sync release ${releaseTag} back into ${baseBranch}`,
+    body: `Version bump and changelog for ${releaseTag}.`,
     base: baseBranch,
-    head: "release",
+    head: bumpBranch,
   });
 
-  try {
-    await octokit.graphql(
-      `mutation EnableAutoMerge($pullRequestId: ID!) {
-        enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: SQUASH }) {
-          pullRequest { number }
-        }
-      }`,
-      { pullRequestId: pr.node_id },
-    );
-  } catch (error) {
-    core.warning(`Could not enable auto-merge on PR #${pr.number}: ${(error as Error).message}`);
-  }
-
   core.setOutput("pr_url", pr.html_url);
-  core.summary.addRaw(
-    `#### Released ${releaseTag} from the release branch. Sync PR into ${baseBranch}: ${pr.html_url}`,
-  );
+  core.summary.addRaw(`#### Opened release PR for ${releaseTag}: ${pr.html_url}`);
   await core.summary.write();
 }
 
