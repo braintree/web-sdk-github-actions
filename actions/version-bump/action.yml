@@ -1,5 +1,5 @@
 name: "Version Bump"
-description: "Cut a release from the release branch: merge base in, bump version + CHANGELOG, tag, and open a sync PR back to base"
+description: "Bump version + CHANGELOG on a throwaway branch and open a release PR into the base branch"
 
 inputs:
   version-type:
@@ -35,24 +35,17 @@ runs:
       with:
         cache: npm
 
-    - name: "Check out release branch, merge base in"
+    - name: "Check out base on a bump branch"
       shell: bash
       env:
         BASE_BRANCH: ${{ inputs.base-branch }}
       run: |
-        # The callers check out shallow (depth 1), but merging base into an
-        # existing release branch needs real history, so grab it all first.
+        # Callers check out shallow (depth 1), but the bump commit needs real history.
         git fetch --prune --unshallow origin 2>/dev/null || git fetch --prune origin
 
-        # First release on a repo may not have a release branch yet, so seed it
-        # from base. After this, release is where the bump commit lands.
-        if git show-ref --verify --quiet refs/remotes/origin/release; then
-          git checkout -B release origin/release
-        else
-          git checkout -B release "origin/$BASE_BRANCH"
-        fi
-
-        git merge "origin/$BASE_BRANCH" --no-edit
+        # Throwaway branch for this release PR. The squash-merge lands the bump on
+        # base and GitHub deletes the branch after merge.
+        git checkout -B "release-bump-$GITHUB_RUN_ID" "origin/$BASE_BRANCH"
 
     - name: "Validate CHANGELOG"
       run: node '${{ github.action_path }}/../../dist/validate-changelog.js'
@@ -68,12 +61,13 @@ runs:
         BASE_BRANCH: ${{ inputs.base-branch }}
         DRY_RUN: ${{ inputs.dry-run }}
 
-    - name: "Push release, tag, and open sync-to-base PR"
+    - name: "Open the release PR"
       if: ${{ inputs.dry-run != 'true' }}
       run: node '${{ github.action_path }}/../../dist/release-pr.js'
       shell: bash
       env:
         NEW_VERSION: ${{ steps.bump.outputs.new_version }}
         BASE_BRANCH: ${{ inputs.base-branch }}
+        BUMP_BRANCH: release-bump-${{ github.run_id }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
