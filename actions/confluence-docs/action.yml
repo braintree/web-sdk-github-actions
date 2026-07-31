@@ -1,0 +1,70 @@
+name: "Publish Docs to Confluence"
+description: "Push markdown docs from this repository to a Confluence workspace"
+
+inputs:
+  confluence-base-url:
+    description: "Confluence base URL (e.g., https://example.atlassian.net)"
+    required: true
+  email:
+    description: "Confluence account email"
+    required: true
+  api-token:
+    description: "Confluence API token"
+    required: true
+  source:
+    description: "Markdown file or directory path"
+    required: true
+  space-key:
+    description: "Confluence space key (creates new page if no page-id)"
+    required: false
+    default: ""
+  page-id:
+    description: "Confluence page ID (fallback if frontmatter missing)"
+    required: false
+    default: ""
+  parent-page-id:
+    description: "Parent page ID for new pages"
+    required: false
+    default: ""
+  write-page-id:
+    description: "Write created page ID back to frontmatter"
+    required: false
+    default: "true"
+  dry-run:
+    description: "Build output but do not update Confluence"
+    required: false
+    default: "false"
+
+outputs:
+  page-url:
+    description: "URL of the updated Confluence page"
+    value: ${{ steps.publish.outputs.page_url }}
+  page-id:
+    description: "ID of the updated Confluence page"
+    value: ${{ steps.publish.outputs.page_id }}
+  version:
+    description: "New version number of the page"
+    value: ${{ steps.publish.outputs.version }}
+  updated:
+    description: "Whether the page was actually updated (true/false)"
+    value: ${{ steps.publish.outputs.updated }}
+  created:
+    description: "Whether a new page was created (true/false)"
+    value: ${{ steps.publish.outputs.created }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Push markdown docs to Confluence"
+      id: publish
+      uses: adrmachado-public/confluence-md@patches-v0.2.2
+      with:
+        confluence_base_url: ${{ inputs.confluence-base-url }}
+        email: ${{ inputs.email }}
+        api_token: ${{ inputs.api-token }}
+        source: ${{ inputs.source }}
+        space_key: ${{ inputs.space-key }}
+        page_id: ${{ inputs.page-id }}
+        parent_page_id: ${{ inputs.parent-page-id }}
+        write_page_id: ${{ inputs.write-page-id }}
+        dry_run: ${{ inputs.dry-run }}
