@@ -98,6 +98,28 @@ permissions:
   id-token: write   # for provenance
 ```
 
+### `actions/confluence-docs`
+
+Push markdown docs from this repository to a Confluence workspace, using [adrmachado-public/confluence-md](https://github.com/adrmachado-public/confluence-md).
+
+```yaml
+steps:
+  - uses: actions/checkout@v6
+  - uses: braintree/web-sdk-github-actions/actions/confluence-docs@main
+    with:
+      confluence-base-url: "https://example.atlassian.net"
+      email: ${{ secrets.CONFLUENCE_EMAIL }}
+      api-token: ${{ secrets.CONFLUENCE_TOKEN }}
+      source: "docs/"
+      space-key: "ENG"           # optional; creates new page if no page-id
+      page-id: ""                # optional; fallback if frontmatter missing
+      parent-page-id: ""         # optional; parent for new pages
+      write-page-id: "true"      # default; write created page ID back to frontmatter
+      dry-run: "false"           # set to "true" to build output without updating Confluence
+```
+
+**Outputs:** `page-url`, `page-id`, `version`, `updated`, `created`.
+
 ---
 
 ## Reusable Workflows
