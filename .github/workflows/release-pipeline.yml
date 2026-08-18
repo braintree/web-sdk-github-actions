@@ -48,6 +48,8 @@ concurrency:
 jobs:
   ci:
     uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+    permissions:
+      contents: read
     with:
       lint-command: ${{ inputs.lint-command }}
       test-command: ${{ inputs.test-command }}
