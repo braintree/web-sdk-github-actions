@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+    uses: ./.github/workflows/ci.yml
     with:
       lint-command: ${{ inputs.lint-command }}
       test-command: ${{ inputs.test-command }}
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: "Setup Node Environment"
-        uses: braintree/web-sdk-github-actions/actions/setup-node@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+        uses: braintree/web-sdk-github-actions/actions/setup-node@45ee569cf478259fa14e8f116136d6d6fd93f061
         with:
           cache: npm
 
@@ -91,7 +91,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: "Publish to npm (dry run)"
-        uses: braintree/web-sdk-github-actions/actions/npm-publish@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+        uses: braintree/web-sdk-github-actions/actions/npm-publish@45ee569cf478259fa14e8f116136d6d6fd93f061
         with:
           dry-run: "true"
           npm-token: ${{ secrets.npm-token }}
