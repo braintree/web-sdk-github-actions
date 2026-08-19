@@ -61,7 +61,7 @@ async function run(): Promise<void> {
     writeFileSync('CHANGELOG.md', changelog.replace(/^## UNRELEASED/im, `## ${newVersion} (${today})`));
 
     await exec.exec('git', ['add', 'package.json', 'package-lock.json', 'CHANGELOG.md']);
-    await exec.exec('git', ['commit', '-m', `Release v${newVersion}`]);
+    await exec.exec('git', ['commit', '-m', `chore(release): v${newVersion}`]);
   } else {
     core.info('DRY RUN — no files modified, no git commit created');
     core.info(`  Repository    : ${process.env.GITHUB_REPOSITORY ?? ''}`);
