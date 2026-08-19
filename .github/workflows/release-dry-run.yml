@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@45ee569cf478259fa14e8f116136d6d6fd93f061
+    uses: ./.github/workflows/ci.yml
     with:
       lint-command: ${{ inputs.lint-command }}
       test-command: ${{ inputs.test-command }}

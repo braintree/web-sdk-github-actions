@@ -47,7 +47,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@45ee569cf478259fa14e8f116136d6d6fd93f061
+    uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
     with:
@@ -80,7 +80,7 @@ jobs:
     permissions:
       id-token: write
       contents: write
-    uses: braintree/web-sdk-github-actions/.github/workflows/publish.yml@45ee569cf478259fa14e8f116136d6d6fd93f061
+    uses: ./.github/workflows/publish.yml
     with:
       ref: v${{ needs.bump-version.outputs.new-version }}
       dry-run: ${{ inputs.dry-run }}
