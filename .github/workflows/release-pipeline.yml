@@ -68,7 +68,7 @@ jobs:
 
       - name: "Bump version"
         id: bump
-        uses: braintree/web-sdk-github-actions/actions/version-bump@45ee569cf478259fa14e8f116136d6d6fd93f061
+        uses: braintree/web-sdk-github-actions/actions/version-bump@d08e2700fb9ffdfe87200621e25ad63e47014941
         with:
           version-type: ${{ inputs.version-type }}
           base-branch: ${{ inputs.base-branch }}
