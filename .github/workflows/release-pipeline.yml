@@ -42,7 +42,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: npm-publish
+  group: npm-release
   cancel-in-progress: true
 
 jobs:
