@@ -18,7 +18,7 @@ runs:
   using: "composite"
   steps:
     - name: "Setup Node Environment"
-      uses: braintree/web-sdk-github-actions/actions/setup-node@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+      uses: braintree/web-sdk-github-actions/actions/setup-node@45ee569cf478259fa14e8f116136d6d6fd93f061
       with:
         registry-url: ${{ inputs.registry-url }}
         cache: npm

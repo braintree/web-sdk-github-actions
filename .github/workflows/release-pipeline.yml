@@ -47,7 +47,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+    uses: braintree/web-sdk-github-actions/.github/workflows/ci.yml@45ee569cf478259fa14e8f116136d6d6fd93f061
     permissions:
       contents: read
     with:
@@ -68,7 +68,7 @@ jobs:
 
       - name: "Bump version"
         id: bump
-        uses: braintree/web-sdk-github-actions/actions/version-bump@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+        uses: braintree/web-sdk-github-actions/actions/version-bump@45ee569cf478259fa14e8f116136d6d6fd93f061
         with:
           version-type: ${{ inputs.version-type }}
           base-branch: ${{ inputs.base-branch }}
@@ -80,7 +80,7 @@ jobs:
     permissions:
       id-token: write
       contents: write
-    uses: braintree/web-sdk-github-actions/.github/workflows/publish.yml@cf4b40ff4b46c96aadbfae38806b8de404a98cb3
+    uses: braintree/web-sdk-github-actions/.github/workflows/publish.yml@45ee569cf478259fa14e8f116136d6d6fd93f061
     with:
       ref: v${{ needs.bump-version.outputs.new-version }}
       dry-run: ${{ inputs.dry-run }}
