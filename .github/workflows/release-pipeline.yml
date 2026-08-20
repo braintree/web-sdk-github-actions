@@ -61,8 +61,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    outputs:
-      new-version: ${{ steps.bump.outputs.new-version }}
     steps:
       - uses: actions/checkout@v6
 
@@ -74,16 +72,3 @@ jobs:
           base-branch: ${{ inputs.base-branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           dry-run: ${{ inputs.dry-run }}
-
-  publish:
-    needs: bump-version
-    permissions:
-      id-token: write
-      contents: write
-    uses: ./.github/workflows/publish.yml
-    with:
-      ref: v${{ needs.bump-version.outputs.new-version }}
-      dry-run: ${{ inputs.dry-run }}
-      runs-on: ${{ inputs.runs-on }}
-    secrets:
-      npm-token: ${{ secrets.npm-token }}
