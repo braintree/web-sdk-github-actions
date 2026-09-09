@@ -19,6 +19,10 @@ inputs:
     description: "Simulate the version bump without making any changes"
     required: false
     default: "false"
+  create-pr:
+    description: "Whether to open the release PR automatically. Set to \"false\" in orgs that disable 'Allow GitHub Actions to create and approve pull requests'; the bump branch is still pushed so a human can open the PR manually."
+    required: false
+    default: "true"
 
 outputs:
   new-version:
@@ -71,3 +75,4 @@ runs:
         BUMP_BRANCH: release-bump-${{ github.run_id }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
+        CREATE_PR: ${{ inputs.create-pr }}
