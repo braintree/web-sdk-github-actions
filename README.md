@@ -45,6 +45,7 @@ steps:
       base-branch: "main"             # default; branch to target for the release PR
       feature-tag: ""                 # optional pre-release tag, e.g. "3ds" → 3.135.0-beta-3ds.1
       dry-run: "false"                # set to "true" to simulate without commit/branch/PR/tag
+      create-pr: "true"               # set to "false" where Actions can't open PRs; the bump branch is still pushed for a manual PR
 ```
 
 **Outputs:** `new-version` — the bumped version string (without `v` prefix).
