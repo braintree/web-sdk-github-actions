@@ -15,6 +15,9 @@ inputs:
   feature-tag:
     description: "Optional feature tag for pre-releases; e.g. `3ds` produces `3.135.0-beta-3ds.1`"
     required: false
+  prerelease-level:
+    description: "Optional semver level for pre-releases (premajor, preminor, prepatch, prerelease). Only valid with a prerelease version-type (alpha, beta, rc). Defaults to auto: `prerelease` if the current version is already a prerelease, otherwise `preminor`. Use `premajor` to start a new major prerelease line (e.g. 3.136.0 -> 4.0.0-alpha.0)."
+    required: false
   dry-run:
     description: "Simulate the version bump without making any changes"
     required: false
@@ -58,6 +61,7 @@ runs:
       env:
         VERSION_TYPE: ${{ inputs.version-type }}
         FEATURE_TAG: ${{ inputs.feature-tag }}
+        PRERELEASE_LEVEL: ${{ inputs.prerelease-level }}
         BASE_BRANCH: ${{ inputs.base-branch }}
         DRY_RUN: ${{ inputs.dry-run }}
 

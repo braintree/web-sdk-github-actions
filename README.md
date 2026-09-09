@@ -44,6 +44,7 @@ steps:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       base-branch: "main"             # default; branch to target for the release PR
       feature-tag: ""                 # optional pre-release tag, e.g. "3ds" → 3.135.0-beta-3ds.1
+      prerelease-level: ""            # optional (prerelease types only): premajor | preminor | prepatch | prerelease; default auto. Use "premajor" to start a new major line, e.g. 3.136.0 → 4.0.0-alpha.0
       dry-run: "false"                # set to "true" to simulate without commit/branch/PR/tag
 ```
 
