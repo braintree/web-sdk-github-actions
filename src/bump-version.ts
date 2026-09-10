@@ -6,29 +6,55 @@ import { getRequiredEnv } from './utils';
 
 const versionType = getRequiredEnv('VERSION_TYPE');
 const featureTag = process.env.FEATURE_TAG ?? '';
+const prereleaseLevel = process.env.PRERELEASE_LEVEL ?? '';
 const isDryRun = process.env.DRY_RUN === 'true';
 
 const PRE_RELEASE_TYPES = ['beta', 'alpha', 'rc'] as const;
 type PreReleaseType = (typeof PRE_RELEASE_TYPES)[number];
 
+const PRERELEASE_LEVELS = ['premajor', 'preminor', 'prepatch', 'prerelease'] as const;
+type PrereleaseLevel = (typeof PRERELEASE_LEVELS)[number];
+
 function isPreRelease(type: string): type is PreReleaseType {
   return PRE_RELEASE_TYPES.includes(type as PreReleaseType);
+}
+
+function isPrereleaseLevel(level: string): level is PrereleaseLevel {
+  return PRERELEASE_LEVELS.includes(level as PrereleaseLevel);
 }
 
 async function run(): Promise<void> {
   const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
   const currentVersion: string = packageJson.version;
 
+  if (prereleaseLevel && !isPrereleaseLevel(prereleaseLevel)) {
+    core.setFailed(
+      `Invalid prerelease-level '${prereleaseLevel}'. Must be one of: ${PRERELEASE_LEVELS.join(', ')}`,
+    );
+    return;
+  }
+
+  if (prereleaseLevel && !isPreRelease(versionType)) {
+    core.setFailed(
+      `prerelease-level '${prereleaseLevel}' is only valid with a prerelease version-type (${PRE_RELEASE_TYPES.join(', ')}), not '${versionType}'`,
+    );
+    return;
+  }
+
   let newVersion: string;
 
   if (isPreRelease(versionType)) {
     const preid = featureTag ? `${versionType}-${featureTag}` : versionType;
 
+    // An explicit prerelease-level wins; otherwise fall back to the historical
+    // auto behavior: continue an existing prerelease line, else start a new minor.
+    const bumpType: PrereleaseLevel =
+      (prereleaseLevel as PrereleaseLevel) ||
+      (currentVersion.includes('-') ? 'prerelease' : 'preminor');
+
     if (isDryRun) {
-      const bumpType = currentVersion.includes('-') ? 'prerelease' : 'preminor';
       newVersion = semver.inc(currentVersion, bumpType, preid) ?? '';
     } else {
-      const bumpType = currentVersion.includes('-') ? 'prerelease' : 'preminor';
       const { stdout } = await exec.getExecOutput('npm', [
         'version',
         bumpType,
@@ -69,6 +95,7 @@ async function run(): Promise<void> {
     core.info(`  Base branch   : ${process.env.BASE_BRANCH ?? ''}`);
     core.info(`  Bump type     : ${versionType}`);
     core.info(`  Feature tag   : ${featureTag}`);
+    core.info(`  Prerelease lvl: ${prereleaseLevel || '(auto)'}`);
     core.info(`  Would release : v${newVersion}`);
   }
 
